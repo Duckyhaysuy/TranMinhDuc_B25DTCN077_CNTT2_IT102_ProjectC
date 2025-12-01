@@ -500,7 +500,7 @@ void showEmployees() {
             fgets(pageInput, sizeof(pageInput), stdin);
             pageInput[strcspn(pageInput, "\n")] = '\0';
 
-            // Kiem tra có phai toàn so không
+            // Kiem tra co phai toan so không
             int valid = 1;
             for (i = 0; pageInput[i]; i++) {
                 if (!isdigit(pageInput[i])) {
@@ -674,7 +674,7 @@ void timeKeeping() {
 
     if (empCount == 0) {
         printf("Danh sach nhan vien dang rong!\n");
-        return;
+        return; // quay l?i menu
     }
 
     // LAY NGAY HIEN TAI
@@ -684,84 +684,86 @@ void timeKeeping() {
     int today_m = now.tm_mon + 1;
     int today_y = now.tm_year + 1900;
 
-    // NHAP MA KHONG DE TRONG
-    while (1) {
-        printf("Nhap ma nhan vien cham cong: ");
-        fgets(checkId, sizeof(checkId), stdin);
-        checkId[strcspn(checkId, "\n")] = '\0';
+    // ======= NHAP MA NHAN VIEN ========
+    printf("Nhap ma nhan vien cham cong (de trong de huy): ");
+    if (fgets(checkId, sizeof(checkId), stdin) == NULL) {
+        printf("Loi nhap!\n");
+        return; // quay l?i menu
+    }
+    checkId[strcspn(checkId, "\n")] = '\0';
 
-        if (isEmpty(checkId)) {
-            printf("Ma nhan vien khong duoc de trong!\n");
-            continue;
-        }
-        break;
+    if (isEmpty(checkId)) {
+        printf("Huy thao tac cham cong!\n");
+        return; // quay v? menu
     }
 
     int index = findEmployeeIndex(checkId);
     if (index == -1) {
-        printf("Khong tim thay nhan vien '%s'!\n", checkId);
+        printf("Khong tim thay nhan vien %s ! \n", checkId);
         return;
     }
 
-    // NHAP NGAY CO KIEM TRA HOP LE
+    // ======== NHAP NGAY CHAM CONG ========
     int d, m, y;
     while (1) {
-        printf("Nhap ngay cham cong (dd/mm/yyyy): ");
-        fgets(date, sizeof(date), stdin);
+        printf("Nhap ngay cham cong (dd/mm/yyyy) (de trong de huy): ");
+        if (fgets(date, sizeof(date), stdin) == NULL) {
+            printf("Loi nhap!\n");
+            return;
+        }
         date[strcspn(date, "\n")] = '\0';
 
-        // KIEM TRA KHOANG TRONG ÐAU / CUOI
-        if (date[0] == ' ' || date[strlen(date) - 1] == ' ') {
-            printf("Khong duoc de khoang trang o dau hoac cuoi chuoi!\n");
-            continue;
-        }
-
         if (isEmpty(date)) {
-            printf("Ngay khong duoc de trong!\n");
-            continue;
+            printf("Huy thao tac cham cong!\n");
+            return;
         }
 
         if (sscanf(date, "%d/%d/%d", &d, &m, &y) != 3) {
-            printf("Dinh dang khong hop le! Vui long nhap theo dd/mm/yyyy.\n");
+            printf("Dinh dang sai! Vui long nhap dd/mm/yyyy\n");
             continue;
         }
 
         if (!isValidDate(d, m, y)) {
-            printf("Ngay %s khong hop le! Vui long nhap lai.\n", date);
+            printf("Ngay %s khong hop le!\n", date);
             continue;
         }
 
-        // KHONG CHO CHAM CONG NGAY TUONG LAI
+        // KHÔNG CHO CH?M CÔNG TUONG LAI
         if (y > today_y ||
            (y == today_y && m > today_m) ||
            (y == today_y && m == today_m && d > today_d)) {
-            printf("Khong the cham cong ngay trong tuong lai! Hom nay la %02d/%02d/%04d.\n",
-                   today_d, today_m, today_y);
+            printf("Khong the cham cong cho ngay tuong lai!\n");
             continue;
         }
 
         break;
     }
 
-    // KIEM TRA TRUNG CHAM CONG
-    for (i = 0; i < logCount; i++) {
+    // ======== KIEM TRA ÐÃ CHAM CÔNG CHUA ========
+    char dateStr[20];
+    sprintf(dateStr, "%02d/%02d/%04d", d, m, y);
+
+    for (int i = 0; i < logCount; i++) {
         if (strcmp(logs[i].empId, checkId) == 0 &&
-            strcmp(logs[i].date, date) == 0) {
-            printf("Nhan vien %s da cham cong vao ngay %s roi.\n", checkId, date);
-            return;
+            strcmp(logs[i].date, dateStr) == 0) {
+
+            printf("Nhan vien co ma %s da cham cong ngay %s roi!\n",
+                   checkId, dateStr);
+            return; // quay v? menu
         }
     }
 
-    // CHAM CONG
-    employees[index].workDay++;
+    // ======== LUU CHAM CONG ========
+    struct TimeSheet log;
+    sprintf(log.logId, "LG%03d", logCount + 1);
+    strcpy(log.empId, checkId);
+    strcpy(log.date, dateStr);
+    strcpy(log.status, "Di lam");
 
-    sprintf(logs[logCount].logId, "LOG%03d", logCount + 1);
-    strcpy(logs[logCount].empId, checkId);
-    strcpy(logs[logCount].date, date);
-    strcpy(logs[logCount].status, "Di lam");
-    logCount++;
+    logs[logCount++] = log;
 
-    printf("Cham cong ngay %s cho nhan vien %s thanh cong!\n", date, checkId);
+    printf("Cham cong thanh cong cho nhan vien %s vao ngay %s!\n",
+           employees[index].name, dateStr);
 }
 
 // case 8: xem bang cong
